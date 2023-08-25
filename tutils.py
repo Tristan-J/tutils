@@ -276,14 +276,14 @@ def img_text2imgnpa(img_npa, lines, loc, fontColor=(255,255,255)):
 
 def img_createcanvas(w, h, c=3, color256=(0, 0, 0)):
     if c == 1:
-        canvas_new = np.full(w, h, color256)
+        canvas_new = np.full((h, w), color256)
     else: 
         canvas_cs = []
         for i in range(3):
-            canvas = np.full(h, w, color256[i])
+            canvas = np.full((h, w), color256[i])
             canvas_cs.append(canvas)
         canvas_new = np.stack(canvas_cs, axis=-1)
-    return canvas_new
+    return canvas_new.astype(np.uint8)
 
 
 def img_concateimg(img_ps, direction):
@@ -306,7 +306,7 @@ def img_cv22rgb(img):
 
 
 # %% [markdown]
-# ### Let's give a demo
+# ### Let's demo tutils!
 
 # %%
 v_shape = vd_getatts('demo.mp4')
@@ -314,8 +314,33 @@ frames = vd_getframes('demo.mp4')
 print(v_shape)
 
 # %%
-img = img_cv22rgb(frames[0])
-img = img_text2imgnpa(img, ['this', 'is a', 'test'], loc=[30, 50])
+img = frames[0]
+print(img[0][0], img.dtype)
+img = img_cv22rgb(img)
+print(img[0][0], img.dtype)
+img = img_text2imgnpa(img, ['this', 'is a', 'text'], loc=[30, 50])
+print(img[0][0], img.dtype)
+
+plt.imshow(img)
+
+# %%
+img2 = img_cv22rgb(frames[17])
+img = img_concateimgnpa([img, img2], direction='h')
+print(img[0][0], img.dtype)
+
+
+plt.imshow(img)
+
+# %%
+img3 = img_createcanvas(w=img.shape[1], h=100)
+img = img_concateimgnpa([img, img3], direction='v')
+print(img[0][0], img.dtype)
+print(img[-1][-1], img.dtype)
+
+
+print(img.shape)
+img = img_text2imgnpa(img, ['this is a ', 'canvas'], loc=[100, 300])
+
 plt.imshow(img)
 
 
