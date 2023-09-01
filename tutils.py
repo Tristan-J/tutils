@@ -196,7 +196,7 @@ def vd_concateframes(vs_frames, direction):
             frames_new.append(frame)
     elif direction == 'a':
         frames_new = np.stack(vs_frames, axis=0)
-    return frames_new
+    return np.array(frames_new).astype(np.uint8)
 def vd_concatescenes(scenes_frames):    # display each scene/clip from left to right
     frames_full = []
     for i, scene_i in enumerate(scenes_frames):
@@ -210,7 +210,7 @@ def vd_concatescenes(scenes_frames):    # display each scene/clip from left to r
         for frame in scene_i:
             frame_full = np.concatenate(frames_sub_pre + [frame] + frames_sub_post, axis=1)
             frames_full.append(frame_full)
-    return frames_full
+    return np.array(frames_full).astype(np.uint8)
 
 def vd_text2v(v_p, lines, loc):
     frames = vd_getframes(v_p)
@@ -276,9 +276,9 @@ def img_text2img(img_p, lines, loc, fontColor=(255,255,255)):
     return img_text2imgnpa(img_npa, lines, loc, fontColor)
 def img_text2imgnpa(img_npa, lines, loc, fontColor=(255,255,255)):
     font                   = cv2.FONT_HERSHEY_SIMPLEX
-    bottomLeftCornerStart  = loc
-    fontScale              = 1
-    thickness              = 2
+    bottomLeftCornerStart  = list(dcopy(loc))
+    fontScale              = 0.5
+    thickness              = 1
     lineType               = 2
     bottomLeftCornerOfText = bottomLeftCornerStart
     for line in lines:
@@ -369,5 +369,13 @@ plt.imshow(img)
 # %%
 v_sample_img = vd_sample("demo.mp4")
 plt.imshow(v_sample_img)
+
+# %%
+frames = vd_text2frames(frames, ['this is ', 'a', 'test'], [10, 30])
+plt.imshow(frames[0])
+plt.show()
+
+# %%
+
 
 
