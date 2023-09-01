@@ -24,6 +24,7 @@
 import os
 from os.path import join as pjoin, exists as pexists
 
+import random
 from copy import deepcopy as dcopy
 from collections import defaultdict as ddict
 
@@ -237,6 +238,23 @@ def vd_writeframes(f_p, fps, frames): # frames is a list/array of np array
         out.write(frame)
     out.release()
 
+def vd_sample(v_p, n=5):
+    frames = vd_getframes(v_p)
+    idxs_sampled = random.sample(range(len(frames)), n)
+    idxs_sampled.sort()
+    fs_sampled = np.array([frames[i] for i in idxs_sampled])
+    return img_concateimgnpa(fs_sampled, 'h')
+
+def vd_cropv(v_p, t=0, r=0, b=0, l=0):
+    frames = vd_getframes
+    return vd_cropframes(frames, t, r, b, l)
+def vd_cropframes(frames, t=0, r=0, b=0, l=0):
+    f_n, f_h, f_w, f_c = frames.shape
+    assert t>=0 and t<f_h
+    assert r>=0 and r<f_w
+    assert b>=0 and b<f_h
+    assert l>=0 and l<f_w
+    return frames[:, t:(f_h-b), l:(f_w-r)]
 
 
 # %% [markdown]
@@ -286,19 +304,31 @@ def img_createcanvas(w, h, c=3, color256=(0, 0, 0)):
     return canvas_new.astype(np.uint8)
 
 
-def img_concateimg(img_ps, direction):
+def img_concateimg(img_ps, direction, separator_width=0):
     assert(direction in ['h', 'v'])    # 'h' (horizontal), 'v'(vertical)
     imgs = []
     for img_p in img_ps:
         imgs.append(cv2.imread(img_p))
-    return img_concateimgnpa(imgs)
-def img_concateimgnpa(img_npas, direction):
+    return img_concateimgnpa(imgs, direction, separator_width)
+def img_concateimgnpa(img_npas, direction, separator_width=0):
     assert(direction in ['h', 'v'])    # 'h' (horizontal), 'v'(vertical)
     if direction == 'h':
-        img_new = np.concatenate(img_npas, axis=1)
+        sep_line = np.full((img_npas[0].shape[0], separator_width, 3), 255)
+        img_npas_new = []
+        for i, img_npa in enumerate(img_npas):
+            img_npas_new.append(img_npa)
+            if i < len(img_npas)-1:
+                img_npas_new.append(sep_line)
+        img_new = np.concatenate(img_npas_new, axis=1)
     elif direction == 'v':
-        img_new = np.concatenate(img_npas, axis=0)
-    return img_new
+        sep_line = np.full((separator_width, img_npas[0].shape[1], 3), 255)
+        img_npas_new = []
+        for i, img_npa in enumerate(img_npas):
+            img_npas_new.append(img_npa)
+            if i < len(img_npas)-1:
+                img_npas_new.append(sep_line)
+        img_new = np.concatenate(img_npas_new, axis=0)
+    return img_new.astype(np.uint8)
     
 def img_cv22rgb(img):
     return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -315,32 +345,29 @@ print(v_shape)
 
 # %%
 img = frames[0]
-print(img[0][0], img.dtype)
 img = img_cv22rgb(img)
-print(img[0][0], img.dtype)
 img = img_text2imgnpa(img, ['this', 'is a', 'text'], loc=[30, 50])
-print(img[0][0], img.dtype)
 
 plt.imshow(img)
 
 # %%
 img2 = img_cv22rgb(frames[17])
-img = img_concateimgnpa([img, img2], direction='h')
-print(img[0][0], img.dtype)
-
+img = img_concateimgnpa([img, img2], direction='h', separator_width=10)
 
 plt.imshow(img)
 
 # %%
 img3 = img_createcanvas(w=img.shape[1], h=100)
 img = img_concateimgnpa([img, img3], direction='v')
-print(img[0][0], img.dtype)
-print(img[-1][-1], img.dtype)
 
 
 print(img.shape)
-img = img_text2imgnpa(img, ['this is a ', 'canvas'], loc=[100, 300])
+img = img_text2imgnpa(img, ['this is a ', 'canvas'], loc=[400, 300])
 
 plt.imshow(img)
+
+# %%
+v_sample_img = vd_sample("demo.mp4")
+plt.imshow(v_sample_img)
 
 
