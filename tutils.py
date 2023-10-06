@@ -17,6 +17,7 @@
 #     - csv2dataframe
 #     - json
 #     - yaml
+#     - image
 # - vd(video):
 #     extract_frames: read frames from video
 # - 
@@ -93,6 +94,7 @@ def save_dict2cvs(f_p, d): # suppose each v of d.values() has the same structure
 # - h5
 # - csv2dataframe
 # - yaml
+# - image
 
 # %%
 def load_text(f_p):
@@ -127,6 +129,10 @@ def load_csv2dataframe(f_p):
 def load_yaml2dict(f_p):
     with open(f_p, 'r') as f:
         out = yaml.safe_load(f)
+    return out
+
+def load_img(f_p):
+    out = cv2.imread(f_p)
     return out
 
 # %% [markdown]
