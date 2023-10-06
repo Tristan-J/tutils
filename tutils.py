@@ -16,6 +16,7 @@
 #     - pickle
 #     - csv2dataframe
 #     - json
+#     - yaml
 # - vd(video):
 #     extract_frames: read frames from video
 # - 
@@ -31,6 +32,7 @@ from collections import defaultdict as ddict
 import pickle
 import json
 import h5py as h5
+import yaml
 
 import pandas as pds
 import numpy as np
@@ -90,6 +92,7 @@ def save_dict2cvs(f_p, d): # suppose each v of d.values() has the same structure
 # - pickle
 # - h5
 # - csv2dataframe
+# - yaml
 
 # %%
 def load_text(f_p):
@@ -121,6 +124,10 @@ def load_csv2dataframe(f_p):
     out = pds.read_csv(f_p)
     return out
 
+def load_yaml2dict(f_p):
+    with open(f_p, 'r') as f:
+        out = yaml.safe_load(f)
+    return out
 
 # %% [markdown]
 # ### vd(video)
