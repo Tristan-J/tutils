@@ -346,41 +346,41 @@ def img_cv22rgb(img):
 # ### Let's demo tutils!
 
 # %%
-v_shape = vd_getatts('demo.mp4')
-frames = vd_getframes('demo.mp4')
-print(v_shape)
+# v_shape = vd_getatts('demo.mp4')
+# frames = vd_getframes('demo.mp4')
+# print(v_shape)
 
 # %%
-img = frames[0]
-img = img_cv22rgb(img)
-img = img_text2imgnpa(img, ['this', 'is a', 'text'], loc=[30, 50])
+# img = frames[0]
+# img = img_cv22rgb(img)
+# img = img_text2imgnpa(img, ['this', 'is a', 'text'], loc=[30, 50])
 
-plt.imshow(img)
-
-# %%
-img2 = img_cv22rgb(frames[17])
-img = img_concateimgnpa([img, img2], direction='h', separator_width=10)
-
-plt.imshow(img)
+# plt.imshow(img)
 
 # %%
-img3 = img_createcanvas(w=img.shape[1], h=100)
-img = img_concateimgnpa([img, img3], direction='v')
+# img2 = img_cv22rgb(frames[17])
+# img = img_concateimgnpa([img, img2], direction='h', separator_width=10)
 
-
-print(img.shape)
-img = img_text2imgnpa(img, ['this is a ', 'canvas'], loc=[400, 300])
-
-plt.imshow(img)
+# plt.imshow(img)
 
 # %%
-v_sample_img = vd_sample("demo.mp4")
-plt.imshow(v_sample_img)
+# img3 = img_createcanvas(w=img.shape[1], h=100)
+# img = img_concateimgnpa([img, img3], direction='v')
+
+
+# print(img.shape)
+# img = img_text2imgnpa(img, ['this is a ', 'canvas'], loc=[400, 300])
+
+# plt.imshow(img)
 
 # %%
-frames = vd_text2frames(frames, ['this is ', 'a', 'test'], [10, 30])
-plt.imshow(frames[0])
-plt.show()
+# v_sample_img = vd_sample("demo.mp4")
+# plt.imshow(v_sample_img)
+
+# %%
+# frames = vd_text2frames(frames, ['this is ', 'a', 'test'], [10, 30])
+# plt.imshow(frames[0])
+# plt.show()
 
 # %%
 
