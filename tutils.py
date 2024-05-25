@@ -25,8 +25,11 @@
 # %%
 import os
 from os.path import join as pjoin, exists as pexists
+import shutil
+import subprocess
 
 import random
+import datetime
 from copy import deepcopy as dcopy
 from collections import defaultdict as ddict
 
@@ -347,6 +350,42 @@ def img_cv22rgb(img):
     return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
 
+
+# %% [markdown]
+# ### FFMPEG related
+# - trim according to start and end time
+# - convert trimmed video to vott-friendly videos (*MP4 -> *XVID)
+
+# %%
+def ffmpeg_trim(p_in, p_out, start, end, replace=True):
+    if pexists(p_out) and replace:
+        shutil.remove(p_out)
+    elif pexists(p_out):
+        return
+    command = 'ffmpeg -ss {} -i {} -t {} -strict -2 -c copy {}'.format(
+            str(datetime.timedelta(seconds=start)),
+            p_in,
+            str(datetime.timedelta(seconds=end-start)),
+            p_out
+    )
+    subprocess.run(command)
+
+def ffmpeg_mp42xvid(p_in, p_out, fps=30.0):
+    cap_in = cv2.VideoCapture(p_in)
+    cap_out = cv2.VideoWriter(p_out, cv2.VideoWriter_fourcc(*'XVID'), fps, (int(cap_in.get(3)), int(cap_in.get(4))))
+    
+    frames = []
+    while (True):
+        succ, frame = cap_in.read()
+        if succ:
+            frames.append(frame)
+        else:
+            break
+    cap_in.release()
+
+    for frame in frames:
+        cap_out.write(frame)
+    cap_out.release()
 
 # %% [markdown]
 # ### Let's demo tutils!
