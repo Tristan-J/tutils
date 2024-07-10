@@ -5,7 +5,7 @@
 # 
 # VIA:
 # - Tristan Jia
-# - zyjia@udel.edu
+# - ziyang.jia@outlook.com
 # 
 # DEPENDANCE:
 # - import_ipynb
@@ -24,7 +24,7 @@
 
 # %%
 import os
-from os.path import join as pjoin, exists as pexists
+from os.path import join as pjoin, exists as pexists, basename as pname
 import shutil
 import subprocess
 
@@ -51,9 +51,31 @@ from matplotlib import pyplot as plt
 # - pickle
 # - h5
 # - dict2cvs
-# - frames2video (mp4)
+# - image
+# <!-- - frames2video (mp4) -->
 
 # %%
+'''
+# from tutils import tutils_save
+'''
+def tutils_save(f_p, d, d_name=False):
+    f_name = pname(f_p)
+    f_type = f_name.split('.')[-1].lower()
+
+    if f_type in ['pkl', 'pickle']:
+        save_pickle(f_p, d)
+    elif f_type == 'json':
+        save_json(f_p, d)
+    elif f_type in ['h5', 'hdf5']:
+        save_h5(f_p, d, d_name)
+    elif f_type == 'cvs':
+        save_dict2cvs(f_p, d)
+    elif f_type in ['png', 'jpg', 'jpeg']:
+        save_img(f_p, d)
+        
+'''
+# child saving functions
+'''
 def save_text(f_p, d):
     with open(f_p, 'a+') as f:
         f.write(d)
@@ -88,6 +110,9 @@ def save_dict2cvs(f_p, d): # suppose each v of d.values() has the same structure
         f.write(content)
     return False
 
+def save_img(f_p, d):
+    cv2.imwrite(f_p, d)
+    return False
 
 # %% [markdown]
 # ### load:
@@ -100,6 +125,33 @@ def save_dict2cvs(f_p, d): # suppose each v of d.values() has the same structure
 # - image
 
 # %%
+'''
+# from tutils import tutils_load
+'''
+def tutils_load(f_p):
+    f_name = pname(f_p)
+    f_type = f_name.split('.')[-1].lower()
+    
+    if f_type == 'json':
+        out = load_json(f_p)
+    if f_type in ['pkl', 'pickle']:
+        out = load_pickle(f_p)
+    elif f_type in ['h5', 'hdf5']:
+        out = load_h5(f_p)
+    elif f_type == 'csv':
+        out = load_csv2dataframe(f_p)
+    elif f_type == 'yaml':
+        out = load_yaml2dict(f_p)
+    elif f_type in ['png', 'jpg', 'jpeg']:
+        out = load_img(f_p)
+    else:   # f_type is txt or other text-based files
+        out = load_text(f_p)
+        
+    return out
+
+'''
+# child loading functions
+'''
 def load_text(f_p):
     with open(f_p, 'r') as f:
         out = f.read()
@@ -273,6 +325,64 @@ def vd_cropframes(frames, t=0, r=0, b=0, l=0):
     return frames[:, t:(f_h-b), l:(f_w-r)]
 
 
+def vd_resize_ratiofixed(p_in, p_out, min=False, max=False, replace=True):
+    if pexists(p_out) and replace:
+        os.remove(p_out)
+    elif pexists(p_out):
+        return
+    if min==False and max==False:
+        return
+    
+    v_cap = cv2.VideoCapture(p_in)
+    v_w, v_h = v_cap.get(cv2.CAP_PROP_FRAME_WIDTH), v_cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    if v_w*v_h == 0:
+        return
+    
+    if max:
+        if v_w>v_h:
+            v_w_new = max
+            v_h_new = v_h*max/v_w
+        else:
+            v_w_new = v_w*max/v_h
+            v_h_new = max
+    else:
+        if v_w>v_h:
+            v_w_new = v_w*min/v_h
+            v_h_new = min
+        else:
+            v_w_new = min
+            v_h_new = v_h*min/v_w
+    v_w_new, v_h_new = int(v_w_new), int(v_h_new)
+
+    frames = vd_getframes(p_in)
+    frames_new = []
+    for frame in frames:
+        frame_new = cv2.resize(frame, (v_w_new, v_h_new), interpolation=cv2.INTER_AREA)
+        frames_new.append(frame_new)
+    vd_writeframes(p_out, 30, frames_new)
+
+
+
+def vd_padding(p_in, p_out, v_w_new, v_h_new, replace=True):
+    if pexists(p_out) and replace:
+        os.remove(p_out)
+    elif pexists(p_out):
+        return
+    try:
+        frames = vd_getframes(p_in)
+    except:
+        return
+    v_h, v_w = frames.shape[1], frames.shape[2]
+    t = (v_h_new-v_h)//2
+    b = v_h_new-v_h-t
+    l = (v_w_new-v_w)//2
+    r = v_w_new-v_w-l
+    frames_new = []
+    for frame in frames:
+        frames_new.append(cv2.copyMakeBorder(frame, t, b, l, r, cv2.BORDER_CONSTANT, value=[0,0,0]))
+    vd_writeframes(p_out, 30, frames_new)
+    
+
 # %% [markdown]
 # ### img
 # - text
@@ -353,10 +463,15 @@ def img_cv22rgb(img):
 
 # %% [markdown]
 # ### FFMPEG related
+# - get video duration
 # - trim according to start and end time
 # - convert trimmed video to vott-friendly videos (*MP4 -> *XVID)
 
 # %%
+def ffmpeg_get_dur(v_p):
+    result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', v_p], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    return float(result.stdout)
+
 def ffmpeg_trim(p_in, p_out, start, end, replace=True):
     if pexists(p_out) and replace:
         shutil.remove(p_out)
@@ -366,6 +481,24 @@ def ffmpeg_trim(p_in, p_out, start, end, replace=True):
             str(datetime.timedelta(seconds=start)),
             p_in,
             str(datetime.timedelta(seconds=end-start)),
+            p_out
+    )
+    subprocess.run(command)
+
+def ffmpeg_crop(p_in, p_out, t, r, b, l, replace=True):
+    if pexists(p_out) and replace:
+        shutil.remove(p_out)
+    elif pexists(p_out):
+        return
+    crop_pattern = '{}:{}:{}:{}'.format(
+        int(r-l),   # w
+        int(b-t),   # h
+        int(l),     # x
+        int(t)      # y
+    )
+    command = 'ffmpeg -i {} -vf "crop={}" {}'.format(
+            p_in,
+            crop_pattern,
             p_out
     )
     subprocess.run(command)
@@ -386,6 +519,107 @@ def ffmpeg_mp42xvid(p_in, p_out, fps=30.0):
     for frame in frames:
         cap_out.write(frame)
     cap_out.release()
+
+
+
+def ffmpeg_resize(p_in, p_out, min=False, max=False, replace=True):
+    if pexists(p_out) and replace:
+        os.remove(p_out)
+    elif pexists(p_out):
+        return
+    if min==False and max==False:
+        return
+    
+    v_cap = cv2.VideoCapture(p_in)
+    v_w, v_h = v_cap.get(cv2.CAP_PROP_FRAME_WIDTH), v_cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    if v_w*v_h == 0:
+        return
+    
+    if max:
+        if v_w>v_h:
+            v_w_new = max
+            v_h_new = v_h*max/v_w
+        else:
+            v_w_new = v_w*max/v_h
+            v_h_new = max
+    else:
+        if v_w>v_h:
+            v_w_new = v_w*min/v_h
+            v_h_new = min
+        else:
+            v_w_new = min
+            v_h_new = v_h*min/v_w
+    v_w_new, v_h_new = int(v_w_new), int(v_h_new)
+
+    command = 'ffmpeg -i "{}" -vf "scale={}:{}" -c:a copy -c:v libx264 "{}"'.format(
+        p_in,
+        v_w_new,
+        v_h_new,
+        p_out
+    )
+    subprocess.run(command)
+
+
+def ffmpeg_padding(p_in, p_out, v_w_new, v_h_new, replace=True):
+    if pexists(p_out) and replace:
+        os.remove(p_out)
+    elif pexists(p_out):
+        return
+
+    command = 'ffmpeg -i "{}" -vf "pad={}:{}:(ow-iw)/2:(oh-ih)/2:black" -c:a copy -c:v libx264 "{}"'.format(
+        p_in,
+        v_w_new,
+        v_h_new,
+        p_out
+    )
+    subprocess.run(command)
+
+# %% [markdown]
+# ### Assemble T-Utils
+# - Tutils
+#     - save
+#     - load
+#     - vd
+#     - img
+# - Tutils is instantiated as tutils, so just use `from tutils import tutils`
+
+# %%
+class Tutils:
+    class _VD:
+        def __init__(self) -> None:
+            self.concateframes = vd_concateframes
+            self.concatescenes = vd_concatescenes
+            self.concatevs = vd_concatevs
+            self.createcavs = vd_createcanvas
+            self.cropframes = vd_cropframes
+            self.cropv = vd_cropv
+            self.getatts = vd_getatts
+            self.getcapatts = vd_getcapatts
+            self.getcapframes = vd_getcapframes
+            self.getframes = vd_getframes
+            self.padding = vd_padding
+            self.resize_ratiofixed = vd_resize_ratiofixed
+            self.sample = vd_sample
+            self.text2frames = vd_text2frames
+            self.text2v = vd_text2v
+            self.writeframes = vd_writeframes
+        
+    class _IMG:
+        def __init__(self) -> None:
+            self.concateimg = img_concateimg
+            self.concateimgnpa = img_concateimgnpa
+            self.createcanvas = img_createcanvas
+            self.cv22rgb = img_cv22rgb
+            self.text2img = img_text2img
+            self.text2imgnpa = img_text2imgnpa
+
+    def __init__(self) -> None:
+        self.save = tutils_save
+        self.load = tutils_load
+        self.vd = self._VD()
+        self.img = self._IMG()
+
+tutils = Tutils()
 
 # %% [markdown]
 # ### Let's demo tutils!
